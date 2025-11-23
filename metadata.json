@@ -1,0 +1,5 @@
+{
+  "name": "AEO & GEO Analyzer",
+  "description": "A McKinsey-style diagnostic tool to analyze webpage readiness for Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO).",
+  "requestFramePermissions": []
+}
