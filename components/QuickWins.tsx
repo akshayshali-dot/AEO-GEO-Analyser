@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 
 interface Props {
   wins: string[];
@@ -7,40 +7,40 @@ interface Props {
 }
 
 export const QuickWins: React.FC<Props> = ({ wins, prompts }) => {
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Wins */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg">
-        <div className="flex items-center gap-2 mb-6">
-          <Zap className="w-5 h-5 text-yellow-400" fill="currentColor" />
-          <h3 className="font-bold text-lg">Quick Wins</h3>
-        </div>
-        <ul className="space-y-4">
+    <div className="space-y-12">
+      {/* Quick Wins */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">Quick Wins (Fix This Week)</h3>
+        <ul className="space-y-3">
           {wins.map((win, i) => (
-            <li key={i} className="flex gap-3 text-sm text-slate-300 leading-relaxed pb-4 border-b border-slate-800 last:border-0 last:pb-0">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-bold text-white">
-                {i + 1}
-              </span>
-              {win}
+            <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
+              <div className="mt-0.5 h-4 w-4 shrink-0 rounded border border-slate-300 flex items-center justify-center">
+                 <Check className="w-3 h-3 text-slate-400" />
+              </div>
+              <span>{win}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Prompts */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-        <h3 className="font-bold text-sm text-slate-800 uppercase tracking-wider mb-4">Test this page with AI</h3>
-        <div className="space-y-4">
+      {/* Suggested Prompts */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">Test Page in AI</h3>
+        <div className="space-y-3">
           {prompts.map((prompt, i) => (
-            <div key={i} className="group relative bg-slate-50 p-3 rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
-              <p className="text-xs text-slate-600 italic pr-6">"{prompt}"</p>
-              <button 
-                onClick={() => navigator.clipboard.writeText(prompt)}
-                className="absolute right-2 top-2 p-1.5 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"
-                title="Copy prompt"
-              >
-                <Copy className="w-3 h-3" />
-              </button>
+            <div key={i} className="flex items-start gap-3 group">
+               <button 
+                  onClick={() => copyToClipboard(prompt)}
+                  className="mt-0.5 shrink-0 px-2 py-0.5 border border-slate-200 rounded text-[10px] font-medium text-slate-500 hover:border-slate-400 hover:text-slate-900 transition-colors"
+               >
+                 Copy
+               </button>
+               <p className="text-sm text-slate-500 italic">"{prompt}"</p>
             </div>
           ))}
         </div>

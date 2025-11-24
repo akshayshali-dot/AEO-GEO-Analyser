@@ -26,12 +26,19 @@ export interface PillarAnalysis {
   longTermOpportunities: string[];
 }
 
+export interface KeyTakeaways {
+  working: string;
+  risks: string;
+  focus: string;
+}
+
 export interface AnalysisReport {
   url: string;
   overallScore: number;
   overallLabel: string; // e.g., "Solid - Ready but can be improved"
   oneLineAssessment: string;
   executiveSummary: string; // Markdown supported
+  keyTakeaways: KeyTakeaways; // High-level bullets
   seo: PillarAnalysis;
   aeo: PillarAnalysis;
   geo: PillarAnalysis;

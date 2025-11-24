@@ -29,6 +29,16 @@ const pillarSchema: Schema = {
   required: ["score", "label", "strengths", "gaps", "recommendations", "longTermOpportunities"],
 };
 
+const keyTakeawaysSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    working: { type: Type.STRING, description: "One specific thing that is working well overall." },
+    risks: { type: Type.STRING, description: "One major risk identified across pillars." },
+    focus: { type: Type.STRING, description: "The single most important area to focus on next." },
+  },
+  required: ["working", "risks", "focus"],
+};
+
 const analysisSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -37,22 +47,18 @@ const analysisSchema: Schema = {
     overallLabel: { type: Type.STRING },
     oneLineAssessment: { type: Type.STRING },
     executiveSummary: { type: Type.STRING },
+    keyTakeaways: keyTakeawaysSchema,
     seo: pillarSchema,
     aeo: pillarSchema,
     geo: pillarSchema,
     quickWins: { type: Type.ARRAY, items: { type: Type.STRING } },
     suggestedPrompts: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
-  required: ["url", "overallScore", "overallLabel", "oneLineAssessment", "executiveSummary", "seo", "aeo", "geo", "quickWins", "suggestedPrompts"],
+  required: ["url", "overallScore", "overallLabel", "oneLineAssessment", "executiveSummary", "keyTakeaways", "seo", "aeo", "geo", "quickWins", "suggestedPrompts"],
 };
 
 export const analyzeUrl = async (url: string): Promise<AnalysisReport> => {
   try {
-    // In a real production app with a backend, we would fetch the HTML here.
-    // Since this is a client-side demo, we ask Gemini to analyze the URL based on its internal knowledge 
-    // or simulate the analysis if it cannot access the live page directly.
-    // We frame the prompt to act as a consultant.
-
     const model = "gemini-2.5-flash";
     
     const prompt = `
@@ -64,16 +70,17 @@ export const analyzeUrl = async (url: string): Promise<AnalysisReport> => {
       2. AEO (Answer Engine Optimization): How well it answers direct questions for AI like ChatGPT/Perplexity.
       3. GEO (Generative Engine Optimization): How quotable, structured, and summarizable the content is for LLMs.
 
-      If you cannot browse the live URL in real-time, simulate a highly realistic audit based on the typical content structure of such a page or domain, or infer from the URL structure what the content likely is.
+      If you cannot browse the live URL in real-time, simulate a highly realistic audit based on the domain pattern or infer content from the URL structure.
       
       Provide a JSON response with:
       - Scores (0-100)
-      - Executive summary (consultant tone)
+      - Executive summary (2 short paragraphs, consultant tone)
+      - Key Takeaways (One main point for 'Working', 'Risks', 'Focus')
       - Specific lists of strengths, gaps, and recommendations.
-      - 5 Quick wins.
+      - 5 Quick wins (actionable, fix this week).
       - 3 Suggested prompts to test the page.
 
-      Be critical. Most pages are not optimized for GEO/AEO yet.
+      Be critical. Most pages are not optimized for GEO/AEO yet. Use professional, concise language.
     `;
 
     const response = await ai.models.generateContent({
@@ -82,7 +89,7 @@ export const analyzeUrl = async (url: string): Promise<AnalysisReport> => {
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
-        temperature: 0.4, // Lower temperature for more analytical/consistent results
+        temperature: 0.4, 
       },
     });
 

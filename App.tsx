@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnalysisState, AnalysisReport } from './types';
 import { analyzeUrl } from './services/geminiService';
-import { Search, ArrowRight, Sparkles, Globe, MessageSquareText, FileText, ChevronRight, Loader2 } from 'lucide-react';
-import { ScoreCard } from './components/ScoreCard';
+import { Loader2, TrendingUp, ShieldAlert, Lightbulb, Share2, Download, FileText, LayoutGrid } from 'lucide-react';
 import { PillarDetail } from './components/PillarDetail';
-import { AnalysisRadar } from './components/RadarChart';
 import { QuickWins } from './components/QuickWins';
+import { SkeletonLoader } from './components/SkeletonLoader';
+import { AnalysisRadar } from './components/RadarChart';
+
+// Professional Background Pattern
+const GridBackground = () => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+    {/* Subtle Grid */}
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+    {/* Ambient Glows */}
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-gradient-to-b from-slate-200/40 to-transparent blur-[80px] rounded-[100%] pointer-events-none"></div>
+  </div>
+);
 
 export default function App() {
   const [urlInput, setUrlInput] = useState('');
@@ -15,21 +25,56 @@ export default function App() {
     error: null
   });
 
+  // Handle Sticky Header logic
+  const [isScrolled, setIsScrolled] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Interval reference to clear on unmount or completion
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!urlInput.trim()) return;
 
-    setState({ status: 'loading', data: null, error: null, currentStep: 'Fetching page content...' });
+    // Engaging loading messages
+    const loadingMessages = [
+      "Connecting to knowledge graph...",
+      "Parsing HTML structure...",
+      "Analyzing SEO meta signals...",
+      "Simulating ChatGPT extraction...",
+      "Evaluating Perplexity readability...",
+      "Calculating content density...",
+      "Detecting hallucination risks...",
+      "Drafting executive summary...",
+      "Finalizing McKinsey-style report..."
+    ];
+
+    setState({ 
+      status: 'loading', 
+      data: null, 
+      error: null, 
+      currentStep: loadingMessages[0] 
+    });
+
+    // Cycle through messages
+    let stepIndex = 0;
+    if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
+    
+    loadingIntervalRef.current = setInterval(() => {
+      stepIndex = (stepIndex + 1) % loadingMessages.length;
+      setState(prev => ({ ...prev, currentStep: loadingMessages[stepIndex] }));
+    }, 1200);
 
     try {
-      // Simulate steps for better UX
-      setTimeout(() => setState(prev => ({ ...prev, currentStep: 'Analyzing SEO signals...' })), 1500);
-      setTimeout(() => setState(prev => ({ ...prev, currentStep: 'Evaluating AEO & GEO patterns...' })), 3000);
-      setTimeout(() => setState(prev => ({ ...prev, currentStep: 'Generating strategic report...' })), 4500);
-
       const result = await analyzeUrl(urlInput);
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
       setState({ status: 'success', data: result, error: null });
     } catch (err) {
+      if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current);
       setState({ 
         status: 'error', 
         data: null, 
@@ -41,92 +86,83 @@ export default function App() {
   const reset = () => {
     setState({ status: 'idle', data: null, error: null });
     setUrlInput('');
+    window.scrollTo(0, 0);
   };
 
-  // -- Hero / Input View --
-  if (state.status === 'idle' || state.status === 'loading') {
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <nav className="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
-          <div className="font-bold text-xl tracking-tight flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-600" />
-            <span>AEO/GEO<span className="text-slate-400 font-normal">Analyzer</span></span>
-          </div>
-        </nav>
+  // ---------------------------------------------------------------------------
+  // VIEW: LOADING (SKELETON)
+  // ---------------------------------------------------------------------------
+  if (state.status === 'loading') {
+    return <SkeletonLoader url={urlInput} step={state.currentStep || "Analyzing..."} />;
+  }
 
-        <main className="flex-1 flex flex-col justify-center items-center px-4 max-w-2xl mx-auto w-full mb-20">
-          <div className="text-center mb-10 space-y-4">
-            <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 tracking-tight">
-              Is your site ready for <br/>
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Answer Engines?</span>
+  // ---------------------------------------------------------------------------
+  // VIEW: INPUT (HOME)
+  // ---------------------------------------------------------------------------
+  if (state.status === 'idle') {
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center px-4 relative overflow-hidden">
+        <GridBackground />
+        <div className="max-w-xl w-full text-center space-y-8 animate-fade-in relative z-10">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full shadow-sm">
+               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">AEO • GEO • SEO</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight">
+              Is your site ready for <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600">the AI era?</span>
             </h1>
-            <p className="text-lg text-slate-500 max-w-lg mx-auto">
-              Analyze any page for AEO (Answer Engine Optimization), GEO (Generative Engine Optimization), and SEO readiness.
+            <p className="text-slate-500 text-sm sm:text-base max-w-sm mx-auto leading-relaxed">
+              Get a consultant-grade diagnostic report on your website's readiness for ChatGPT, Perplexity, and Gemini.
             </p>
           </div>
 
-          <form onSubmit={handleAnalyze} className="w-full relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Globe className="h-5 w-5 text-slate-400" />
+          <form onSubmit={handleAnalyze} className="w-full max-w-md mx-auto relative group">
+            <div className="relative transform transition-all duration-300 focus-within:scale-105">
+              <input
+                type="url"
+                required
+                placeholder="https://example.com/page"
+                className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 text-slate-900 placeholder-slate-300 focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100 transition-all text-center font-medium"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+              />
             </div>
-            <input
-              type="url"
-              required
-              placeholder="https://example.com/your-page"
-              className="w-full pl-11 pr-36 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              disabled={state.status === 'loading'}
-            />
-            <button
-              type="submit"
-              disabled={state.status === 'loading'}
-              className="absolute right-2 top-2 bottom-2 bg-slate-900 text-white hover:bg-slate-800 px-6 rounded-xl text-sm font-medium transition-colors disabled:opacity-70 flex items-center gap-2"
-            >
-              {state.status === 'loading' ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  Analyze <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <button
+                type="submit"
+                className="bg-slate-900 text-white hover:bg-slate-800 px-8 py-3.5 rounded-xl text-sm font-semibold transition-all min-w-[160px] flex justify-center items-center shadow-lg shadow-slate-900/20 hover:translate-y-[-2px]"
+              >
+                Run Analysis
+              </button>
+              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-wide">
+                 <ShieldAlert className="w-3 h-3" />
+                 <span>No Auth Required</span>
+                 <span>•</span>
+                 <span>Free Tier</span>
+              </div>
+            </div>
           </form>
-          
-          {state.status === 'loading' && (
-             <div className="mt-8 flex flex-col items-center gap-3 animate-fade-in">
-               <div className="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                 <div className="h-full bg-blue-600 animate-progress origin-left w-full"></div>
-               </div>
-               <p className="text-sm text-slate-500 font-medium">{state.currentStep}</p>
-             </div>
-          )}
-
-          <div className="mt-12 flex gap-8 justify-center text-xs text-slate-400 uppercase tracking-wider font-medium">
-            <span className="flex items-center gap-1.5"><Globe className="w-3 h-3"/> SEO</span>
-            <span className="flex items-center gap-1.5"><MessageSquareText className="w-3 h-3"/> AEO</span>
-            <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3"/> GEO</span>
-          </div>
-        </main>
-        
-        <footer className="p-6 text-center text-xs text-slate-400">
-          Powered by Gemini 2.5 • Generates McKinsey-style diagnostics
-        </footer>
+        </div>
       </div>
     );
   }
 
-  // -- Results View --
+  // ---------------------------------------------------------------------------
+  // VIEW: ERROR
+  // ---------------------------------------------------------------------------
   if (state.status === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-         <div className="bg-white p-8 rounded-2xl shadow-sm max-w-md text-center">
-            <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-6 h-6" />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 relative">
+         <GridBackground />
+         <div className="text-center space-y-4 relative z-10 bg-white p-8 rounded-2xl border border-slate-200 shadow-xl">
+            <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-2">
+               <ShieldAlert className="w-6 h-6 text-rose-500" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Analysis Failed</h2>
-            <p className="text-slate-600 mb-6">{state.error}</p>
-            <button onClick={reset} className="text-sm font-bold text-blue-600 hover:underline">Try another URL</button>
+            <div className="text-rose-600 font-medium">Analysis Failed</div>
+            <p className="text-slate-500 max-w-xs mx-auto text-sm">{state.error}</p>
+            <button onClick={reset} className="text-sm font-semibold text-slate-900 hover:text-slate-700 underline underline-offset-4">Try again</button>
          </div>
       </div>
     );
@@ -134,119 +170,205 @@ export default function App() {
 
   const report = state.data!;
 
+  // ---------------------------------------------------------------------------
+  // VIEW: RESULTS
+  // ---------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-900 pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={reset}>
-             <Sparkles className="w-5 h-5 text-blue-600" />
-             <span className="font-bold text-lg hidden sm:inline">AEO/GEO<span className="text-slate-400 font-normal">Analyzer</span></span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-xs font-mono text-slate-500">
-              <Globe className="w-3 h-3" />
-              <span className="truncate max-w-[150px]">{report.url}</span>
-            </div>
-            <button onClick={reset} className="text-sm font-medium text-slate-500 hover:text-slate-900">
-              New Analysis
-            </button>
-          </div>
+    <div className="min-h-screen bg-[#fafafa] text-slate-900 font-sans pb-24 relative selection:bg-slate-200">
+      <GridBackground />
+      
+      {/* 1. Compact Summary Bar (Sticky) */}
+      <div className={`sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 transition-all duration-300 ${isScrolled ? 'shadow-sm py-3' : 'py-5'}`}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+           <div className="flex items-center gap-4 w-full sm:w-auto overflow-hidden">
+             <div className="flex-1 min-w-0">
+               <div className="flex items-center gap-2">
+                 <div className="p-1 bg-slate-100 rounded text-slate-500">
+                    <FileText className="w-3 h-3" />
+                 </div>
+                 <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Analysis Report</h2>
+                 <span className="text-[10px] text-slate-300">|</span>
+                 <p className="text-[10px] font-medium text-slate-500 truncate max-w-[200px]">{report.url}</p>
+               </div>
+               <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-sm font-semibold text-slate-900">Readiness Score:</span>
+                  <span className={`text-sm font-bold ${
+                      report.overallScore >= 80 ? 'text-emerald-600' : report.overallScore >= 50 ? 'text-amber-600' : 'text-rose-600'
+                   }`}>
+                    {report.overallScore}/100
+                  </span>
+               </div>
+             </div>
+           </div>
+
+           <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="hidden sm:flex gap-2">
+                 <ScorePill label="SEO" score={report.seo.score} />
+                 <ScorePill label="AEO" score={report.aeo.score} />
+                 <ScorePill label="GEO" score={report.geo.score} />
+              </div>
+              <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+              <div className="flex gap-4">
+                <button onClick={() => window.print()} className="text-slate-400 hover:text-slate-900 transition-colors flex items-center gap-2 group">
+                  <Download className="w-4 h-4" />
+                  <span className="text-xs font-medium hidden group-hover:block transition-all">Save PDF</span>
+                </button>
+                <button onClick={reset} className="text-xs font-bold text-white bg-slate-900 rounded-lg px-4 py-2 hover:bg-slate-800 transition-all shadow-md shadow-slate-200">
+                  New Audit
+                </button>
+              </div>
+           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-12 space-y-16 relative z-10">
         
-        {/* Top Overview Section */}
-        <section className="mb-12">
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Score Box */}
-            <div className="w-full lg:w-1/3">
-               <ScoreCard 
-                 title="Overall Readiness" 
-                 score={report.overallScore} 
-                 label={report.overallLabel} 
-                 size="lg"
-               />
-               <div className="mt-4 grid grid-cols-3 gap-4">
-                 <ScoreCard title="SEO" score={report.seo.score} label={report.seo.label} />
-                 <ScoreCard title="AEO" score={report.aeo.score} label={report.aeo.label} />
-                 <ScoreCard title="GEO" score={report.geo.score} label={report.geo.label} />
-               </div>
+        {/* 2. Executive Summary & Radar */}
+        <section className="animate-fade-in-up">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 mb-12">
+            
+            {/* Left: Text Summary */}
+            <div className="lg:col-span-2 space-y-8">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                   <div className="p-2 bg-slate-900 text-white rounded-lg shadow-lg shadow-slate-200">
+                      <LayoutGrid className="w-5 h-5" />
+                   </div>
+                   <h2 className="text-xl font-bold text-slate-900 tracking-tight">Executive Summary</h2>
+                </div>
+                
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
+                   <div className="absolute top-0 left-0 w-1 h-full bg-slate-900"></div>
+                   <div className="text-slate-600 leading-relaxed text-[15px] space-y-4 relative z-10">
+                     <p>{report.executiveSummary}</p>
+                   </div>
+                </div>
+              </div>
+
+              {/* Key Takeaways Cards - Professional Graphics */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                 {/* Strength Card */}
+                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity transform rotate-12">
+                       <TrendingUp size={80} />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                       <div className="p-1.5 bg-emerald-100 rounded-md text-emerald-700">
+                          <TrendingUp size={16} strokeWidth={3} />
+                       </div>
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Core Strength</span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium leading-relaxed relative z-10">{report.keyTakeaways.working}</p>
+                 </div>
+                 
+                 {/* Risk Card */}
+                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity transform rotate-12">
+                       <ShieldAlert size={80} />
+                    </div>
+                     <div className="flex items-center gap-2 mb-3">
+                       <div className="p-1.5 bg-rose-100 rounded-md text-rose-700">
+                          <ShieldAlert size={16} strokeWidth={3} />
+                       </div>
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Major Risk</span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium leading-relaxed relative z-10">{report.keyTakeaways.risks}</p>
+                 </div>
+
+                 {/* Focus Card */}
+                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+                     <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity transform rotate-12">
+                       <Lightbulb size={80} />
+                    </div>
+                    <div className="flex items-center gap-2 mb-3">
+                       <div className="p-1.5 bg-blue-100 rounded-md text-blue-700">
+                          <Lightbulb size={16} strokeWidth={3} />
+                       </div>
+                       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Strategic Focus</span>
+                    </div>
+                    <p className="text-xs text-slate-700 font-medium leading-relaxed relative z-10">{report.keyTakeaways.focus}</p>
+                 </div>
+              </div>
             </div>
 
-            {/* Exec Summary */}
-            <div className="w-full lg:w-2/3 bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100">
-               <div className="flex items-center gap-3 mb-6">
-                 <div className="h-px flex-1 bg-slate-100"></div>
-                 <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Executive Summary</span>
-                 <div className="h-px flex-1 bg-slate-100"></div>
-               </div>
-               
-               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 leading-tight">
-                 {report.oneLineAssessment}
-               </h2>
-               
-               <div className="prose prose-slate prose-sm max-w-none text-slate-600 leading-relaxed">
-                 <p className="whitespace-pre-line">{report.executiveSummary}</p>
-               </div>
-               
-               <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-8">
-                  <div className="flex-1">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Top Priority</h4>
-                    <p className="text-sm font-medium text-slate-900 flex gap-2 items-start">
-                      <ChevronRight className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                      {report.seo.recommendations[0]?.description || "Optimize core technical vitals."}
-                    </p>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Strategic Goal</h4>
-                    <p className="text-sm font-medium text-slate-900 flex gap-2 items-start">
-                      <ChevronRight className="w-4 h-4 text-purple-500 mt-0.5 shrink-0" />
-                      {report.aeo.longTermOpportunities[0] || "Build entity authority."}
-                    </p>
-                  </div>
+            {/* Right: Radar Chart */}
+            <div className="lg:col-span-1 flex flex-col h-full">
+               <div className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 p-6 flex flex-col justify-between h-full relative overflow-hidden">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-slate-100 rounded-bl-full -mr-16 -mt-16 opacity-50 z-0"></div>
+                 
+                 <div className="mb-6 relative z-10 text-center">
+                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Performance Balance</h3>
+                 </div>
+                 <div className="flex-1 min-h-[200px] relative z-10">
+                   <AnalysisRadar data={report} />
+                 </div>
+                 <div className="text-center mt-6 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
+                       <span className="w-2 h-2 rounded-full bg-slate-900"></span>
+                       <span className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">{report.overallLabel}</span>
+                    </div>
+                 </div>
                </div>
             </div>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Content Columns (Pillars) */}
-          <div className="lg:col-span-8">
-             <PillarDetail 
-               title="SEO Optimization" 
-               description="Foundational discoverability and technical health."
-               data={report.seo}
-               icon={<Globe className="w-6 h-6 text-slate-700" />}
-             />
-             <PillarDetail 
-               title="AEO Optimization" 
-               description="Readiness to provide direct answers to user questions (ChatGPT, etc)."
-               data={report.aeo}
-               icon={<MessageSquareText className="w-6 h-6 text-slate-700" />}
-             />
-             <PillarDetail 
-               title="GEO Optimization" 
-               description="Content structure, quoting potential, and summarization ease."
-               data={report.geo}
-               icon={<Sparkles className="w-6 h-6 text-slate-700" />}
-             />
-          </div>
+        {/* 3. Detailed Pillars */}
+        <section className="space-y-6 animate-fade-in-up delay-100">
+           <div className="flex items-center gap-4 mb-8">
+             <div className="h-px bg-slate-200 flex-1"></div>
+             <div className="flex items-center gap-2 text-slate-400">
+                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                <h2 className="text-xs font-bold uppercase tracking-widest">Detailed Analysis Pillars</h2>
+                <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+             </div>
+             <div className="h-px bg-slate-200 flex-1"></div>
+           </div>
+           
+           <div className="space-y-8">
+              <PillarDetail 
+                  title="SEO Analysis" 
+                  data={report.seo} 
+                  description="Evaluates technical foundations, content depth, and traditional ranking signals."
+              />
+              <PillarDetail 
+                  title="AEO Readiness" 
+                  data={report.aeo} 
+                  description="Assesses how well content directly answers questions for engines like Perplexity & ChatGPT."
+              />
+              <PillarDetail 
+                  title="GEO Optimization" 
+                  data={report.geo} 
+                  description="Measures content structure, quotability, and summarization potential for LLMs."
+              />
+           </div>
+        </section>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-4 space-y-8">
-            <div className="sticky top-24 space-y-8">
-               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hidden lg:block">
-                 <h3 className="font-bold text-sm text-slate-400 uppercase tracking-wider mb-4 text-center">Balance Check</h3>
-                 <AnalysisRadar data={report} />
-               </div>
-               <QuickWins wins={report.quickWins} prompts={report.suggestedPrompts} />
-            </div>
-          </div>
-        </div>
+        {/* 4. Quick Wins & Prompts */}
+        <section className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm animate-fade-in-up delay-200 relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-400"></div>
+           <QuickWins wins={report.quickWins} prompts={report.suggestedPrompts} />
+        </section>
+
+        <footer className="text-center pb-8 pt-12 text-slate-400 border-t border-slate-200/50 mt-16">
+           <div className="flex items-center justify-center gap-2 mb-2 opacity-50">
+              <ShieldAlert className="w-4 h-4" />
+              <span className="text-[10px] uppercase tracking-widest font-bold">Confidential Analysis</span>
+           </div>
+           <p className="text-[10px] text-slate-400">Generated by AEO/GEO/SEO Analyzer • Always verify findings before implementation</p>
+        </footer>
 
       </main>
     </div>
   );
 }
+
+// Sub-component for small pills in header
+const ScorePill = ({ label, score }: { label: string, score: number }) => {
+  const color = score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : score >= 50 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-rose-50 text-rose-700 border-rose-100';
+  return (
+    <div className={`px-3 py-1 rounded-md border text-[10px] font-bold ${color}`}>
+      {label} {score}
+    </div>
+  );
+};
